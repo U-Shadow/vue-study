@@ -1,0 +1,72 @@
+<beans xmlns="http://www.springframework.org/schema/beans" 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cxf="http://camel.apache.org/schema/cxf" 	xmlns:jaxrs="http://cxf.apache.org/jaxrs" 
+	xsi:schemaLocation="	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+	http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+	http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+<bean id="reviveProcessor" class="com.example.camel.test.camel.processor.ReviveProcessor">
+</bean>
+<bean id="fileBeanServer" class="com.example.camel.test.camel.beans.FileBeanServer">
+</bean>
+<bean id="jms" class="org.apache.camel.component.jms.JmsComponent">
+<property name="connectionFactory">
+<bean class="org.apache.activemq.ActiveMQConnectionFactory">
+<property name="brokerURL" value="tcp://localhost:61616" />
+</bean>
+</property>
+</bean>
+<bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+<property name="brokerURL" value="tcp://localhost:61616" /> 
+</bean>
+<bean id="mqBeanServer" class="com.example.camel.test.camel.beans.MqBeanServer" />
+<camelContext id="a" trace="false" xmlns="http://camel.apache.org/schema/spring">
+<dataFormats>
+<json id="xstream" prettyPrint="true" />
+<json id="jackson" prettyPrint="true" library="Jackson" />
+<json id="gson" prettyPrint="true" library="Gson" />
+<xmljson id="xmljson" />
+<xmljson id="xmljsonWithOptions" forceTopLevelObject="true" trimSpaces="true" rootName="newRoot" skipNamespaces="true"
+removeNamespacePrefixes="true" expandableProperties="d e" />
+</dataFormats>
+
+<route id="node-1539916270660">
+<from uri="jetty://http://127.0.0.1:9898/jmsIn" />
+<setHeader headerName="name">
+	<constant>apusic</constant>
+</setHeader>
+<setBody>
+	<constant>
+		aaa
+	</constant>
+</setBody>
+<to uri="jms:queue:test?jmsMessageType=Text&amp;disableReplyTo=true"/>
+</route>
+
+<route id="node-1541558633994">
+<from uri="jetty://http://127.0.0.1:9898/jmsFecth" />
+<to uri="direct:node-1541558635547"/>
+</route>
+
+<route id="node-1541558635547">
+<from uri="direct:node-1541558635547" />
+<setHeader headerName="anonymousConn"><constant>
+true
+</constant></setHeader>
+<setHeader headerName="brokerURL"><constant>
+tcp://localhost:61616
+</constant></setHeader>
+<setHeader headerName="queueName"><constant>
+test
+</constant></setHeader>
+<setHeader headerName="filter"><constant>
+</constant></setHeader>
+<setHeader headerName="timeout"><constant>
+10
+</constant></setHeader>
+<setHeader headerName="msgDataName"><constant>
+JMSFetchData1
+</constant></setHeader>
+<bean ref="bean:mqBeanServer" method="mqFetch"/>
+</route>
+</camelContext>
+</beans>

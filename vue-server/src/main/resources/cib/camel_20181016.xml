@@ -1,0 +1,68 @@
+<beans xmlns="http://www.springframework.org/schema/beans" 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cxf="http://camel.apache.org/schema/cxf" 	
+	xmlns:jaxrs="http://cxf.apache.org/jaxrs" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd 
+	http://camel.apache.org/schema/cxf 
+	http://camel.apache.org/schema/cxf/camel-cxf.xsd 
+	http://cxf.apache.org/jaxrs 
+	http://cxf.apache.org/schemas/jaxrs.xsd 
+	http://camel.apache.org/schema/spring 
+	http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+<bean id="reviveProcessor" class="com.example.camel.test.camel.processor.ReviveProcessor">
+</bean>
+<bean id="fileBeanServer" class="com.example.camel.test.camel.beans.FileBeanServer">
+</bean>
+
+<bean id="jms" class="org.apache.camel.component.jms.JmsComponent"> 
+	<property name="connectionFactory"> 
+	<bean class="org.apache.activemq.ActiveMQConnectionFactory"> 
+		<property name="brokerURL" value="tcp://localhost:61616" />
+		<!-- <property name="userName" value="admin" />
+		<property name="password" value="admin" /> -->
+	</bean> 
+	</property> 
+</bean> 
+
+<bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent"> 
+	<property name="brokerURL" value="tcp://localhost:61616" />
+</bean> 
+
+<camelContext id="file" trace="false" xmlns="http://camel.apache.org/schema/spring">
+<dataFormats>
+<json id="xstream" prettyPrint="true" />
+<json id="jackson" prettyPrint="true" library="Jackson" />
+<json id="gson" prettyPrint="true" library="Gson" />
+<xmljson id="xmljson" />
+<xmljson id="xmljsonWithOptions" forceTopLevelObject="true" trimSpaces="true" rootName="newRoot" skipNamespaces="true"
+removeNamespacePrefixes="true" expandableProperties="d e" />
+</dataFormats>
+
+<route id="node-1539916270660">
+<from uri="jetty://http://127.0.0.1:9898/jmsIn" />
+<setHeader headerName="name">
+	<constant>apusic</constant>
+</setHeader>
+<setBody>
+	<constant>
+		aaa
+	</constant>
+</setBody>
+<to uri="jms:queue:test?jmsMessageType=Text&amp;disableReplyTo=true"/>
+</route>
+
+<!-- <route id="node-1539916270661">
+<from uri="jms:queue:test" />
+<choice>
+    <when>
+        <simple>${headers.name} == 'aaa'</simple>
+        <to uri="file:e:/temp?fileName=abc.txt"/>
+    </when>
+</choice>
+<setBody>
+	<simple>${headers.name}</simple>
+</setBody>
+<to uri="file:e:/temp?fileName=def.txt"/>
+</route> -->
+</camelContext>
+</beans>

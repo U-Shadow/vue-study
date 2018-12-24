@@ -1,0 +1,76 @@
+<beans xmlns="http://www.springframework.org/schema/beans" 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cxf="http://camel.apache.org/schema/cxf" 	xmlns:jaxrs="http://cxf.apache.org/jaxrs" 
+	xsi:schemaLocation="	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+	http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+	http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <property name="driverClassName" value="com.mysql.jdbc.Driver" />	
+    <property name="url" value="jdbc:mysql://localhost:3306/camel_test" />
+    <property name="username" value="root" />
+    <property name="password" value="root" />
+</bean>
+
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+    <constructor-arg index="0" ref="dataSource"></constructor-arg>
+</bean>
+   
+<!-- Processor处理器 -->
+<bean id="reviveProcessor" class="com.example.camel.test.camel.processor.ReviveProcessor">
+</bean>
+   
+<!-- 执行groovy文件后的Processor处理器 -->
+<bean id="groovyProcessor" class="com.example.camel.test.camel.processor.GroovyProcessor">
+</bean>
+<camelContext id="abc" trace="false" xmlns="http://camel.apache.org/schema/spring">
+
+	<dataFormats>
+		<json id="xstream" prettyPrint="true" />
+		<json id="jackson" prettyPrint="true" library="Jackson" />
+		<json id="gson" prettyPrint="true" library="Gson" />
+		<xmljson id="xmljson" />
+		<xmljson id="xmljsonWithOptions" forceTopLevelObject="true" trimSpaces="true" rootName="newRoot" skipNamespaces="true"
+			removeNamespacePrefixes="true" expandableProperties="d e" />
+	</dataFormats>
+
+	<route id="node-1539055176928">
+		<from uri="direct:node-1539055176928" />
+		<setBody>
+			<constant>
+			SELECT 
+				ID, 
+				NAME, 
+				CATEGORY, 
+				TAGS, 
+				AUTHOR
+			FROM camel_test.articles
+			</constant>
+		</setBody>
+		<to uri="jdbc:dataSource"/>
+     	<split>
+            <simple>${body}</simple>
+            <log message="process row ${body}"/>
+            <to uri="bean:reviveProcessor" />
+            <!-- <to uri="stream:out"/> -->
+        </split>
+		<!-- <to uri="direct:node-1538964682360"/> -->
+	</route>
+
+	<route id="node-1538964714553">
+		<from uri="jetty://http://0.0.0.0:8083/test100" />
+		<filter>
+            <groovy>resource:cib/Example.groovy</groovy>
+            <to uri="direct:node-1539055176928"/>
+        </filter>
+		<!-- <setBody>
+			<groovy>resource:cib/Example.groovy</groovy>
+		</setBody> -->
+		<to uri="bean:groovyProcessor" />
+	</route>
+
+	<route id="node-1539055167815">
+		<from uri="jetty://http://localhost:8888/test" />
+		<to uri="direct:node-1539055176928"/>
+	</route>
+</camelContext>
+</beans>
